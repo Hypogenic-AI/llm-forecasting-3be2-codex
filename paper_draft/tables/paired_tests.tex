@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\caption{Paired LLM-versus-crowd \brier analysis. Negative mean differences favor the LLM. None of the comparisons are statistically significant at $\alpha=0.05$.}
+\label{tab:paired_tests}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Regime & Prompt & Wilcoxon $p$-value & Mean Diff. $(\text{LLM} - \text{Crowd})$ & 95\% CI \\
+\midrule
+\longterm & \questiononly & 0.309 & {\bf -0.050} & [-0.143, 0.037] \\
+\longterm & \withhistory & 0.889 & -0.026 & [-0.078, 0.018] \\
+\shortterm & \questiononly & 0.943 & +0.066 & [-0.012, 0.154] \\
+\shortterm & \withhistory & 0.239 & -0.010 & [-0.031, 0.001] \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+

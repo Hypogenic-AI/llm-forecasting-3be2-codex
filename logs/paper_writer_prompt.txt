@@ -1,0 +1,787 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .codex/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# REPORT: LLMs and Forecasting
+
+## 1. Executive Summary
+This project tested whether `gpt-4.1` outperforms human crowd forecasts in two regimes derived from the same binary-question forecasting dataset: `long_term_low_data` and `short_term_high_data`.
+
+The main result is mixed. On long-horizon sparse-information questions, the LLM beat the crowd when prompted only with the question context. On short-horizon dense-information questions, the LLM underperformed the crowd unless it was given the historical crowd trajectory, at which point it nearly matched and slightly beat the crowd on mean Brier. None of the paired LLM-vs-crowd differences reached `p < 0.05` with `n=30` per condition.
+
+Practically, the evidence does not support the blanket claim that LLMs are better than humans in both regimes. It suggests a narrower conclusion: LLMs can be competitive in long-horizon sparse settings from question text alone, while short-horizon performance depends strongly on access to structured historical forecasting data.
+
+## 2. Research Question & Motivation
+### Hypothesis
+LLMs outperform humans at short-term high-data forecasting and long-term low-data forecasting.
+
+### Why this matters
+The question is important for deciding where LLM-based forecasting systems should replace, complement, or aggregate human judgment. Prior work mixes task types: some papers compare LLMs to human crowds on event forecasting, while others study numeric time-series forecasting without human baselines. That makes the user hypothesis hard to test directly.
+
+### Gap addressed here
+This study avoids mixing unrelated datasets. It uses one local crowd-forecasting dataset and constructs two matched information regimes from the same questions and trajectories, allowing a more controlled `LLM vs human crowd` comparison.
+
+## 3. Experimental Setup
+### Dataset and regime construction
+Source dataset: `datasets/forecast_questions_platforms/` test split.
+
+Filtered task:
+- resolved binary questions only
+
+Regime definitions:
+- `long_term_low_data`: forecast cutoff at least `60` days before resolution and at most `5` crowd predictions observed
+- `short_term_high_data`: forecast cutoff at most `14` days before resolution and at least `30` crowd predictions observed
+
+Sampling:
+- `30` items per regime
+- short-horizon sample chosen to avoid question overlap with the long-horizon sample
+- total evaluated forecasts: `120` (`60` items x `2` prompt conditions)
+
+Observed regime characteristics from the final sample:
+
+| Regime | Avg days to resolution | Median days | Avg crowd predictions seen | Median predictions |
+|---|---:|---:|---:|---:|
+| `long_term_low_data` | 119.2 | 125.0 | 1.0 | 1.0 |
+| `short_term_high_data` | 1.5 | 1.0 | 100.0 | 101.0 |
+
+### Model and prompting
+Model:
+- `gpt-4.1`
+
+API settings:
+- temperature `0.0`
+- JSON-only response format
+
+Prompt conditions:
+- `question_only`: question, dates, background, resolution criteria
+- `question_plus_history`: same as above plus a structured summary of crowd trajectory available before the cutoff
+
+Prompt template:
+- [prompts/forecast_prompt.txt](/workspaces/llm-forecasting-3be2-codex/prompts/forecast_prompt.txt)
+
+### Baselines
+- human crowd probability at the same cutoff
+- `0.5` no-information baseline
+
+### Metrics
+- primary: Brier score
+- secondary: log loss, accuracy, bucketed calibration
+
+### Statistical analysis
+- Wilcoxon signed-rank test on paired Brier scores
+- bootstrap `95%` CI for mean paired difference (`LLM - crowd`)
+
+### Compute and environment
+- Python `3.12.8`
+- `openai 2.38.0`, `numpy 2.4.6`, `pandas 3.0.3`
+- GPU detected: `4 x NVIDIA RTX A6000 (49 GB each)`
+- GPU not used because the experiment was API-based
+
+Token usage:
+- `question_only`: `42,145` total tokens
+- `question_plus_history`: `53,003` total tokens
+- total: `95,148` tokens
+
+Approximate API cost using the pricing assumption in the task prompt (`$1.25/M` input, `$10/M` output):
+- about `$0.22`
+
+Outputs:
+- raw model outputs: [results/model_outputs](/workspaces/llm-forecasting-3be2-codex/results/model_outputs)
+- analysis tables: [results/analysis](/workspaces/llm-forecasting-3be2-codex/results/analysis)
+- figures: [figures](/workspaces/llm-forecasting-3be2-codex/figures)
+
+## 4. Results
+### Main metric table
+
+| Regime | Prompt | n | LLM Brier | Crowd Brier | 0.5 Baseline | LLM Acc. | Crowd Acc. | Mean Brier Diff (`LLM - Crowd`) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `long_term_low_data` | `question_only` | 30 | 0.151 | 0.200 | 0.250 | 0.767 | 0.600 | -0.050 |
+| `long_term_low_data` | `question_plus_history` | 30 | 0.174 | 0.200 | 0.250 | 0.633 | 0.600 | -0.026 |
+| `short_term_high_data` | `question_only` | 30 | 0.131 | 0.065 | 0.250 | 0.833 | 0.900 | +0.066 |
+| `short_term_high_data` | `question_plus_history` | 30 | 0.056 | 0.065 | 0.250 | 0.933 | 0.900 | -0.010 |
+
+### Paired tests
+
+| Regime | Prompt | Wilcoxon p-value | Mean Brier Diff (`LLM - Crowd`) | 95% CI |
+|---|---|---:|---:|---|
+| `long_term_low_data` | `question_only` | 0.309 | -0.050 | [-0.143, 0.037] |
+| `long_term_low_data` | `question_plus_history` | 0.889 | -0.026 | [-0.078, 0.018] |
+| `short_term_high_data` | `question_only` | 0.943 | +0.066 | [-0.012, 0.154] |
+| `short_term_high_data` | `question_plus_history` | 0.239 | -0.010 | [-0.031, 0.001] |
+
+### Key figures
+![Brier by regime](figures/brier_by_regime.png)
+
+![LLM minus crowd Brier](figures/llm_minus_crowd_brier.png)
+
+![Calibration](figures/calibration_question_plus_history.png)
+
+## 5. Analysis & Discussion
+### What supports the hypothesis
+The strongest support appears in `long_term_low_data` with `question_only`. Here the LLM beat the crowd by about `0.050` Brier and by `0.167` absolute accuracy. This matches the intuition that long-horizon sparse questions benefit from broader textual reasoning rather than crowd momentum.
+
+### What contradicts the hypothesis
+The `short_term_high_data` result depends on prompt condition. Without crowd-history input, the LLM was much worse than the crowd (`0.131` vs `0.065` Brier). The worst misses were mostly late-breaking YES events where the model stayed near `0.05-0.15` while the crowd had already moved upward.
+
+### What changed when history was added
+Adding structured trajectory history helped the short-horizon regime substantially:
+- short-term Brier improved from `0.131` to `0.056`
+- long-term Brier worsened from `0.151` to `0.174`
+
+This suggests two different mechanisms:
+- in sparse long-horizon settings, crowd history may add little and may even anchor the LLM too much
+- in dense short-horizon settings, recent trajectory information is critical and the LLM can use it to nearly match the crowd
+
+### Error analysis
+Representative long-horizon crowd failures:
+- The crowd assigned `0.98` to the labor-force-participation question that resolved NO; the LLM gave `0.45` and incurred far less loss.
+- On Serbia/Kosovo conflict, the crowd was at `0.70` and the LLM at `0.18`; the event resolved NO, favoring the LLM.
+
+Representative short-horizon LLM failures without history:
+- The model assigned `0.05` to several eventual YES questions that the crowd had already moved toward, including a Biden impeachment inquiry and Spain winning the 2023 Women's World Cup.
+- These errors largely disappeared when trajectory history was supplied, indicating that the model was not independently tracking late-stage consensus shifts from question text alone.
+
+### Relation to literature
+The results align with the literature review rather than the strong form of the user hypothesis:
+- they fit the claim that LLMs can be competitive in low-data judgmental forecasting
+- they do not support a broad claim of LLM dominance over humans in short-term high-data forecasting
+- they show that any short-term advantage is conditional on providing structured historical forecast information
+
+## 6. Limitations
+- Sample size is modest: `30` items per regime and prompt condition.
+- No live retrieval was used, so the LLM saw only local dataset context rather than open-web evidence available to a real forecaster.
+- The `question_plus_history` condition is not a pure independent forecast because it exposes human trajectory information to the LLM.
+- The long-horizon regime is especially sparse, with a mean of only `1` observed prediction at the cutoff; this is a strong but narrow operationalization of "low-data."
+- The short-horizon sample is dominated by Metaculus questions, which may limit generalization across platforms.
+- None of the LLM-vs-crowd comparisons were statistically significant at `alpha=0.05`, so the direction of effects should be treated as suggestive, not definitive.
+
+## 7. Conclusions & Next Steps
+This experiment does not fully confirm the hypothesis that LLMs are better than humans at both short-term high-data forecasting and long-term low-data forecasting. A more accurate conclusion is that `gpt-4.1` was competitive and directionally better in long-term low-data settings from question context alone, but in short-term high-data settings it needed access to historical crowd trajectories to match or slightly beat the crowd.
+
+The next experiments should be:
+1. Add live retrieval at the historical cutoff date to test whether external evidence closes the short-horizon gap without relying on crowd trajectories.
+2. Increase sample size and stratify by domain and platform.
+3. Compare `gpt-4.1` with `gpt-5` and at least one non-OpenAI model.
+4. Add a stricter ablation that provides numeric news/event indicators but not crowd probabilities.
+
+## References
+- Halawi, D., Zhang, F., Chen, Y.-H., and Steinhardt, J. (2024). *Approaching Human-Level Forecasting with Language Models*.
+- Schoenegger, P., and Park, P. S. (2023). *Large Language Model Prediction Capabilities: Evidence from a Real-World Forecasting Tournament*.
+- Paleka, D. et al. (2024). *Consistency Checks for Language Model Forecasters*.
+- Full literature synthesis: [literature_review.md](/workspaces/llm-forecasting-3be2-codex/literature_review.md)
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: LLMs and Forecasting
+
+## Motivation & Novelty Assessment
+
+### Why This Research Matters
+Forecasting quality matters in policy, markets, and operations, and the most important practical question is not whether LLMs can generate plausible forecasts, but when they are actually better than people. A clean comparison between LLMs and human crowd forecasts can clarify whether LLMs are most useful as early-stage forecasters under uncertainty, late-stage synthesizers of abundant evidence, or neither.
+
+### Gap in Existing Work
+The literature review shows two disconnected lines of work: event/question forecasting with direct human comparisons, and numeric time-series forecasting without human baselines. Existing evidence does not directly test the user hypothesis as a single within-dataset comparison across information regimes, and the strongest positive and negative papers disagree on where LLM advantages should appear.
+
+### Our Novel Contribution
+This study tests the hypothesis within one local human-comparable dataset by converting each forecasting question into matched question-timepoints. Instead of mixing unrelated datasets, it compares a real LLM against the contemporaneous human crowd at two regimes: `short-term high-data` and `long-term low-data`, both defined from the same platform trajectories.
+
+### Experiment Justification
+- Experiment 1: Evaluate `long-term low-data` question-timepoints to test whether the LLM beats the crowd when there is sparse historical signal and long horizon uncertainty.
+- Experiment 2: Evaluate `short-term high-data` question-timepoints to test whether the LLM beats the crowd when many prior updates exist and the question is near resolution.
+- Experiment 3: Run prompt variants with and without explicit crowd-trajectory summaries to distinguish reasoning from simple crowd imitation.
+- Experiment 4: Compare both systems to a `0.5` no-information baseline to ensure improvements are meaningful.
+
+## Research Question
+Do real LLM forecasts outperform contemporaneous human crowd forecasts on binary forecasting questions in two regimes: `short-term high-data` and `long-term low-data`?
+
+## Background and Motivation
+Prior work shows retrieval-augmented LLM systems can approach human crowd performance on event forecasting, while early direct GPT-4 comparisons underperformed humans. The literature also shows that "LLM forecasting" claims depend heavily on task definition. To avoid conflating numeric time-series benchmarking with judgmental forecasting, this project focuses on the locally available forecasting-platform dataset, where both resolved outcomes and human crowd trajectories are available.
+
+## Hypothesis Decomposition
+- H1: In `long-term low-data` settings, the LLM has lower Brier score than the human crowd.
+- H2: In `short-term high-data` settings, the LLM has lower Brier score than the human crowd.
+- H3: Access to structured historical crowd trajectory helps more in `short-term high-data` than in `long-term low-data`.
+- Alternative explanation A: Any apparent LLM gains come from copying the crowd trajectory rather than independent synthesis.
+- Alternative explanation B: Regime effects are driven by platform/domain mix rather than information regime.
+
+Independent variables:
+- Forecaster: `LLM`, `human_crowd`, `0.5_baseline`
+- Regime: `long_term_low_data`, `short_term_high_data`
+- Prompt condition: `question_only`, `question_plus_history`
+
+Dependent variables:
+- Primary: Brier score
+- Secondary: log loss, accuracy, calibration by bucket, absolute error from outcome
+
+## Proposed Methodology
+
+### Approach
+Use the local `datasets/forecast_questions_platforms/` test split and create matched evaluation items from resolved binary questions. For each question, select a forecast timestamp meeting either regime definition. At that timestamp, compare:
+1. the contemporaneous crowd probability,
+2. the LLM probability elicited from a real OpenAI model,
+3. a `0.5` baseline.
+
+The LLM will be prompted with question text, resolution criteria, background, source, and optionally a compact summary of crowd-trajectory history available before the cutoff. This keeps the evaluation reproducible and avoids needing fresh web retrieval.
+
+### Experimental Steps
+1. Load and validate the local forecasting-platform dataset and parse community trajectories.
+2. Construct matched timepoints:
+   - `long_term_low_data`: at least 60 days to resolution and at most 5 crowd predictions observed.
+   - `short_term_high_data`: at most 14 days to resolution and at least 30 crowd predictions observed.
+3. Sample balanced subsets from both regimes for affordable API evaluation.
+4. Call a real OpenAI model with deterministic settings and parse probabilities from JSON outputs.
+5. Score LLM, crowd, and `0.5` baseline on the same outcomes.
+6. Run paired statistical tests and effect-size calculations by regime.
+7. Perform error analysis, calibration analysis, and prompt-ablation comparison.
+
+### Baselines
+- Human crowd aggregate at the matched cutoff.
+- `0.5` uninformed baseline.
+- Prompt ablation:
+  - `question_only`
+  - `question_plus_history`
+
+### Evaluation Metrics
+- Brier score: primary metric for binary forecasting.
+- Log loss: penalizes overconfident mistakes.
+- Accuracy at 0.5 threshold: easy interpretability.
+- Calibration curves / expected calibration error: to inspect confidence quality.
+
+### Statistical Analysis Plan
+- Use paired bootstrap confidence intervals for mean Brier differences.
+- Use Wilcoxon signed-rank tests on paired per-item losses because binary-question loss distributions are non-normal.
+- Report effect sizes as mean paired difference and rank-biserial style direction summaries.
+- Significance level: `alpha = 0.05`.
+- Treat each sampled question-timepoint as the unit of analysis and disclose any repeated-question overlap across regimes.
+
+## Expected Outcomes
+Support for the user hypothesis would require:
+- lower LLM Brier than crowd in `long_term_low_data`, and
+- lower LLM Brier than crowd in `short_term_high_data`.
+
+Refutation occurs if the LLM loses in either regime, or if gains vanish under the ablation and appear to be simple crowd-following.
+
+## Timeline and Milestones
+1. Planning and data profiling.
+2. Environment verification and dependency setup.
+3. Implementation of dataset parser, prompt builder, and API runner.
+4. Experiment execution on both regimes and prompt conditions.
+5. Statistical analysis, figures, and report writing.
+
+## Potential Challenges
+- API variability or parsing failures.
+  Mitigation: deterministic temperature, JSON-only outputs, retry logic, raw-response logging.
+- Regime sample imbalance.
+  Mitigation: balanced sampling with explicit filters and documented exclusions.
+- Validity concern that crowd history leaks human signal into the LLM.
+  Mitigation: include `question_only` ablation and frame `question_plus_history` as an upper-bound synthesis condition.
+- Limited external context because no live retrieval is used.
+  Mitigation: keep claims scoped to dataset-conditioned forecasting rather than open-web forecasting.
+
+## Success Criteria
+- A complete runnable pipeline under the local `.venv`.
+- Real-model forecasts stored in `results/model_outputs/`.
+- Statistical comparison of LLM vs crowd in both regimes.
+- `REPORT.md` with actual results, figures, limitations, and a clear answer to the hypothesis.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: LLMs and Forecasting
+
+## Review Scope
+
+### Research Question
+Do LLMs outperform humans at short-term high-data forecasting and long-term low-data forecasting?
+
+### Inclusion Criteria
+- Papers on LLMs or language-model-based systems for forecasting.
+- Papers with direct comparison to human or crowd forecasts, or to strong forecasting baselines.
+- Papers that expose datasets, code, or benchmarks usable for follow-on experiments.
+- Recent core papers from 2023 onward, plus directly relevant foundational/benchmark papers.
+
+### Exclusion Criteria
+- Purely descriptive LLM papers without forecasting evaluation.
+- Domain papers where forecasting is incidental and not benchmarked.
+- Papers without enough methodological detail to support reproduction planning.
+
+### Time Frame
+2023 to 2026, with emphasis on 2024 to 2026.
+
+### Sources
+- Paper-finder workflow and manual fallback
+- arXiv
+- Hugging Face dataset cards
+- GitHub repositories
+
+## Search Log
+
+| Date | Query | Source | Notes |
+|------|-------|--------|-------|
+| 2026-05-25 | `large language models forecasting humans short-term long-term low-data high-data` | paper-finder script | Service path was slow; used manual follow-up |
+| 2026-05-25 | `LLM forecasting time series human baseline` | paper-finder script | Used to seed time-series branch |
+| 2026-05-25 | `language models forecasting geopolitical events human forecasts` | paper-finder script | Used to seed event-forecasting branch |
+| 2026-05-25 | `large language models are zero-shot time series forecasters` | arXiv/manual | Confirmed seminal time-series paper |
+| 2026-05-25 | `Approaching Human-Level Forecasting with Language Models` | arXiv/manual | Confirmed direct human comparison |
+| 2026-05-25 | `Are Language Models Actually Useful for Time Series Forecasting?` | arXiv/manual | Confirmed strong ablation counterpoint |
+
+## Screening Results
+
+| Paper | Title Screen | Abstract Screen | Full Text | Notes |
+|------|------|------|------|------|
+| Halawi et al. 2024 | Include | Include | Include | Central event-forecasting paper |
+| Schoenegger and Park 2023 | Include | Include | Include | Direct GPT-4 vs human crowd |
+| Paleka et al. 2024 | Include | Include | Abstract+methods | Evaluation methodology |
+| Gruver et al. 2023 | Include | Include | Abstract+results | Seminal zero-shot TS paper |
+| Jin et al. 2023 | Include | Include | Include | Major TS-LLM method |
+| Tan et al. 2024 | Include | Include | Include | Critical ablation paper |
+| Liu et al. 2024 | Include | Include | Abstract+results | Time-series foundation-model comparator |
+| Guo et al. 2026 | Include | Include | Abstract+results | Recent TS-LLM improvement |
+
+## Key Papers
+
+### Paper 1: Approaching Human-Level Forecasting with Language Models
+- **Authors**: Danny Halawi, Fred Zhang, Chen Yueh-Han, Jacob Steinhardt
+- **Year**: 2024
+- **Source**: arXiv / NeurIPS 2024
+- **Key Contribution**: Retrieval-augmented LM forecasting system evaluated on real questions from five forecasting platforms.
+- **Methodology**: LM-generated search queries, news retrieval, article relevance filtering, summarization, multiple reasoned forecasts, trimmed-mean aggregation, and self-supervised fine-tuning.
+- **Datasets Used**: Curated binary-question dataset from Metaculus, GJOpen, INFER, Polymarket, and Manifold; 5,516 binary questions after curation, with 3,762 train, 840 validation, 914 test.
+- **Baselines Compared Against**: Zero-shot and scratchpad prompting across GPT-4, Claude, Gemini, Llama, Mixtral, plus human crowd aggregate.
+- **Evaluation Metrics**: Brier score, accuracy, calibration.
+- **Results**: Best baseline LM around 0.208 Brier on the test set; crowd aggregate 0.149; their full system reaches 0.179. The system is closer to crowd performance on earlier retrieval dates and on questions where the crowd is uncertain.
+- **Code Available**: Yes, cloned in `code/llm_forecasting/`
+- **Relevance to Our Research**: Strongest available evidence for LMs in low-data judgmental forecasting. Supports "approaches human level" but does not show general crowd outperformance.
+
+### Paper 2: Large Language Model Prediction Capabilities: Evidence from a Real-World Forecasting Tournament
+- **Authors**: Philipp Schoenegger, Peter S. Park
+- **Year**: 2023
+- **Source**: arXiv
+- **Key Contribution**: Direct live-tournament comparison between GPT-4 and human forecasters.
+- **Methodology**: Entered GPT-4 into a three-month Metaculus tournament and compared same-day initial forecasts against human crowd medians.
+- **Datasets Used**: 23 binary questions from a live Metaculus tournament spanning politics, technology, public health, and geopolitics.
+- **Baselines Compared Against**: Human crowd median and 0.5 no-information baseline.
+- **Evaluation Metrics**: Brier score, directional accuracy.
+- **Results**: GPT-4 average Brier 0.20 versus human crowd 0.07; GPT-4 did not significantly beat the 0.25 no-information baseline.
+- **Code Available**: No dedicated repo found.
+- **Relevance to Our Research**: Important negative result. Early general-purpose GPT-4 did not match humans at real-world event forecasting.
+
+### Paper 3: Consistency Checks for Language Model Forecasters
+- **Authors**: Daniel Paleka et al.
+- **Year**: 2024
+- **Source**: arXiv
+- **Key Contribution**: Instantaneous evaluation framework for forecasters using arbitrage-style logical consistency.
+- **Methodology**: Generate logically related question sets, elicit forecasts, and compute consistency metrics that correlate with eventual Brier scores.
+- **Datasets Used**: Automated consistency benchmark and future-resolving benchmark.
+- **Baselines Compared Against**: Multiple LM forecasters.
+- **Evaluation Metrics**: Consistency metrics, Brier correlation.
+- **Results**: Consistency metrics can help rank forecasters before outcomes resolve.
+- **Code Available**: Not used locally.
+- **Relevance to Our Research**: Useful evaluation tool for long-horizon questions where waiting for resolution is slow.
+
+### Paper 4: Large Language Models Are Zero-Shot Time Series Forecasters
+- **Authors**: Nate Gruver, Marc Finzi, Shikai Qiu, Andrew Gordon Wilson
+- **Year**: 2023
+- **Source**: arXiv / NeurIPS 2023
+- **Key Contribution**: Shows numeric time series can be encoded as text and extrapolated with general LLMs in zero-shot mode.
+- **Methodology**: Scale/serialize numeric sequences into text, sample textual continuations, decode back to time-series forecasts.
+- **Datasets Used**: Darts and Monash-style benchmark sets.
+- **Baselines Compared Against**: Standard time-series baselines and multiple base LLMs.
+- **Evaluation Metrics**: Forecast likelihood and benchmark forecasting metrics.
+- **Results**: Competitive zero-shot performance, but aligned models can underperform less-aligned base models.
+- **Code Available**: Yes, cloned in `code/llmtime/`
+- **Relevance to Our Research**: Important short-term high-data TS baseline, but it contains no human comparison.
+
+### Paper 5: Time-LLM: Time Series Forecasting by Reprogramming Large Language Models
+- **Authors**: Ming Jin et al.
+- **Year**: 2023
+- **Source**: arXiv / ICLR 2024
+- **Key Contribution**: Reprograms frozen LLMs for time-series forecasting using patch embeddings and prompt prefixes.
+- **Methodology**: RevIN normalization, patching, patch reprogramming into text-prototype space, prompt-as-prefix, frozen LLM backbone, lightweight trainable heads.
+- **Datasets Used**: ETT, Weather, Electricity, Traffic, ILI, and M4.
+- **Baselines Compared Against**: GPT4TS, DLinear, PatchTST, TimesNet, FEDformer, Autoformer, Informer, Reformer, N-BEATS, N-HiTS, and others.
+- **Evaluation Metrics**: MSE, MAE, SMAPE, MASE, OWA.
+- **Results**: Reports strong performance on long-term forecasting and few-shot settings, often beating specialized baselines.
+- **Code Available**: Yes, cloned in `code/Time-LLM/`
+- **Relevance to Our Research**: Useful if the project treats short-term high-data forecasting as benchmark time-series prediction rather than human judgment.
+
+### Paper 6: Are Language Models Actually Useful for Time Series Forecasting?
+- **Authors**: Mingtian Tan et al.
+- **Year**: 2024
+- **Source**: arXiv / NeurIPS 2024
+- **Key Contribution**: Strong ablation study questioning whether LLM components help time-series forecasting at all.
+- **Methodology**: Reproduces Time-LLM, OneFitsAll, and CALF; removes or replaces the LLM with attention/transformer blocks; evaluates speed, few-shot behavior, and shuffled-input sensitivity.
+- **Datasets Used**: ETT, Illness, Weather, Traffic, Electricity, Exchange Rate, Covid Deaths, Taxi, NN5, FRED-MD, and more.
+- **Baselines Compared Against**: Original LLM-based methods and simple patch/attention baselines.
+- **Evaluation Metrics**: MAE, MSE, runtime, few-shot performance.
+- **Results**: Simpler ablations often match or beat the original LLM-based models while using orders of magnitude less compute; shuffled inputs do not strongly hurt performance, suggesting weak sequence modeling transfer from LLMs.
+- **Code Available**: Yes, cloned in `code/LLMsForTimeSeries/`
+- **Relevance to Our Research**: The strongest caution against assuming LLM superiority in high-data time-series forecasting.
+
+### Paper 7: Timer: Generative Pre-trained Transformers Are Large Time Series Models
+- **Authors**: Yong Liu et al.
+- **Year**: 2024
+- **Source**: arXiv
+- **Key Contribution**: Builds a large time-series model directly for forecasting/imputation/anomaly detection.
+- **Methodology**: Generative pretraining over time-series tasks.
+- **Datasets Used**: Benchmark time-series suites.
+- **Baselines Compared Against**: Multiple TS models.
+- **Evaluation Metrics**: Standard forecasting metrics.
+- **Results**: Strong evidence that purpose-built TS foundation models may be a cleaner comparator than repurposed text LLMs.
+- **Code Available**: Referenced in paper.
+- **Relevance to Our Research**: Good non-LLM baseline family for experiments.
+
+### Paper 8: T-LLM: Teaching Large Language Models to Forecast Time Series via Temporal Distillation
+- **Authors**: Suhan Guo et al.
+- **Year**: 2026
+- **Source**: arXiv
+- **Key Contribution**: Explicitly teaches forecasting behavior to LLMs through a temporal teacher.
+- **Methodology**: Distillation from a lightweight temporal teacher into an LLM, then teacher removed at inference.
+- **Datasets Used**: Benchmark TS datasets and infectious-disease forecasting tasks.
+- **Baselines Compared Against**: Existing LLM-based forecasting methods.
+- **Evaluation Metrics**: Standard forecasting metrics under full-shot, few-shot, and zero-shot settings.
+- **Results**: Claims gains over prior TS-LLM methods.
+- **Code Available**: Not cloned locally.
+- **Relevance to Our Research**: Suggests the TS-LLM field is moving away from naive repurposing toward explicitly forecast-trained hybrids.
+
+## Common Methodologies
+
+- **Retrieval-augmented judgmental forecasting**: Used by Halawi et al. for low-data event forecasting with historical news retrieval and forecast aggregation.
+- **Direct live prompting on open questions**: Used by Schoenegger and Park; simple but weaker than the retrieval-augmented systems.
+- **Numeric-to-text serialization**: Used by LLMTime for zero-shot time-series extrapolation.
+- **Patch reprogramming of frozen LLMs**: Used by Time-LLM to map time-series patches into language-model space.
+- **Ablation-based skepticism**: Used by Tan et al. to test whether the LLM component contributes anything beyond patching and attention.
+
+## Standard Baselines
+
+- **Human crowd aggregate**: The most important baseline for question/event forecasting.
+- **0.5 no-information forecast**: Useful sanity baseline in binary forecasting.
+- **Traditional TS neural baselines**: DLinear, PatchTST, TimesNet, FEDformer, Autoformer, Informer, N-BEATS, N-HiTS.
+- **Alternative TS foundation models**: Timer and related purpose-built time-series models.
+
+## Evaluation Metrics
+
+- **Brier score**: Primary metric for binary question forecasting; lower is better.
+- **Accuracy and calibration**: Important complements for judgmental forecasting.
+- **MSE / MAE**: Standard for long-horizon time-series forecasting.
+- **SMAPE / MASE / OWA**: Standard for M4-style short-term time-series benchmarks.
+
+## Datasets in the Literature
+
+- **Forecasting platform questions**: Metaculus, GJOpen, INFER, Polymarket, Manifold. Best for LM-vs-human comparison.
+- **FOReCAst**: Compact binary forecasting dataset suited to lightweight experiments.
+- **YuehHanChen/forecasting**: Larger curated platform dataset aligned to Halawi et al.
+- **ETT / Weather / Electricity / Traffic / ILI**: Standard long-horizon TS benchmarks used by Time-LLM and follow-ups.
+- **M4**: Canonical short-term benchmark used for broad TS comparisons.
+
+## Gaps and Opportunities
+
+- **Gap 1: Human comparisons are concentrated in event forecasting, not numeric time series.**
+  There is little direct evidence for "LLMs vs humans" on short-term high-data numeric series.
+
+- **Gap 2: Strong positive TS-LLM papers are contested by later ablations.**
+  The literature is not settled that text LLMs are the right tool for benchmark time-series forecasting.
+
+- **Gap 3: The hypothesis mixes two forecasting regimes.**
+  "Short-term high-data" fits numeric time series, while "long-term low-data" fits question/event forecasting. They likely need separate experimental pipelines.
+
+## Recommendations for Our Experiment
+
+- **Primary dataset(s)**:
+  - `datasets/forecast_questions_platforms/` for long-term low-data judgmental forecasting.
+  - `datasets/timeseries_m4_hourly/` and `datasets/timeseries_etth1/` for short-term high-data time-series forecasting.
+
+- **Recommended baselines**:
+  - Human/community crowd aggregate for question forecasting.
+  - 0.5 baseline for binary sanity checks.
+  - DLinear or PAttn for time-series baselines.
+  - Time-LLM and LLMTime as LLM-based comparators.
+
+- **Recommended metrics**:
+  - Brier score and calibration for question forecasting.
+  - MAE/MSE for ETT.
+  - SMAPE/MASE/OWA for M4-style series.
+
+- **Methodological considerations**:
+  - Treat event forecasting and numeric time-series forecasting as separate experiments.
+  - Do not claim human outperformance on high-data numeric TS unless a real human benchmark is introduced.
+  - For long-term low-data questions, compare against the crowd aggregate at matched retrieval dates.
+  - For high-data TS, include skeptical ablations because current literature shows many LLM gains may come from non-LLM components.
+
+## Bottom Line
+
+Current evidence does **not** cleanly support the full hypothesis as stated.
+
+- For **long-term low-data judgmental forecasting**, LMs can approach human crowd performance and sometimes beat the crowd on subsets, especially early in a question lifecycle or when the crowd is uncertain.
+- For **short-term high-data time-series forecasting**, the literature is mixed: some papers report LLM gains, but strong later ablations suggest much of the benefit may come from patching, attention, or task setup rather than language modeling itself.
+
+The best experiment is therefore a two-track design:
+1. Question/event forecasting with human crowd baselines.
+2. Numeric time-series forecasting with strong non-LLM baselines and, if desired, a separately collected human baseline.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Ari Holtzman and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Ari Holtzman and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .codex/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

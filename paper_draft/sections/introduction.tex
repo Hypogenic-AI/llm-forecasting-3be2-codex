@@ -1,0 +1,23 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Forecasts guide decisions in policy, business, and operations, so the practical question is not whether language models can generate plausible probabilities, but when they can outperform existing human judgment. For deployment, that distinction matters: a system that helps on sparse early-stage questions may be useful even if it fails near resolution, while a system that only succeeds after seeing crowd trajectories may be better viewed as a synthesizer than an independent forecaster.
+
+Recent work has made this picture harder to read. On one hand, retrieval-augmented forecasting systems built on language models have approached human crowd performance on real forecasting-platform questions \cite{halawi2024approaching}. On the other hand, direct comparisons between general-purpose LLMs and human crowds have reported large gaps in favor of humans \cite{schoenegger2023llm}. A separate line of work studies numeric time-series forecasting with LLMs and often reports strong benchmark results, but these studies usually do not include human baselines and often evaluate a different problem altogether \cite{gruver2023llmtime,jin2024timellm,tan2024timeseries}. As a result, the simple hypothesis that ``LLMs outperform humans in both short-term high-data and long-term low-data forecasting'' remains under-tested.
+
+\para{What is missing?} Existing evidence often mixes datasets, tasks, or information conditions. Event forecasting papers compare to humans but focus on open-world binary questions; time-series papers study dense numeric sequences without human crowd baselines; and positive and negative findings are rarely tested within one controlled dataset. That makes it difficult to tell whether performance differences come from horizon, information density, prompt design, or task mismatch.
+
+\para{Our approach.} We address this gap with a matched within-dataset comparison. Using one local binary-question forecasting dataset, we construct two regimes from the same pool of resolved questions: \longterm, defined by at least 60 days to resolution and at most five crowd predictions observed, and \shortterm, defined by at most 14 days to resolution and at least 30 crowd predictions observed. We then compare \gptmodel, the contemporaneous human crowd forecast, and a 0.5 baseline at the same historical cutoff. We further run two prompt conditions: \questiononly, which uses only question context, and \withhistory, which adds a structured summary of the crowd trajectory available before the cutoff.
+
+\para{What do we find?} The answer is mixed and regime-dependent. In \longterm, the \questiononly model forecast improves mean \brier from 0.200 for the crowd to 0.151 for the LLM, a paired mean difference of $-0.050$. In \shortterm, the same prompt underperforms badly, with \brier 0.131 versus 0.065 for the crowd. Adding historical crowd structure nearly closes that gap and slightly reverses it, bringing model \brier to 0.056. None of these paired differences are statistically significant at $\alpha=0.05$, but the directional pattern is consistent with the view that LLMs help more with sparse long-horizon reasoning than with late-stage consensus tracking.
+
+\begin{itemize}
+\setlength{\itemsep}{0pt}
+\setlength{\topsep}{0pt}
+\item We construct a controlled within-dataset evaluation that compares LLM and crowd forecasts across matched sparse and dense information regimes.
+\item We conduct a prompt ablation that separates text-only forecasting from history-conditioned synthesis of human trajectory information.
+\item We report paired \brier comparisons, bootstrap confidence intervals, and calibration plots that clarify where the model gains and where it fails.
+\item We provide a narrower empirical conclusion: LLM competitiveness depends strongly on information regime and access to historical forecast structure.
+\end{itemize}
+
+The rest of the paper is organized as follows. \Secref{sec:related} situates the study relative to event-forecasting and time-series work. \Secref{sec:methodology} describes the dataset construction, prompting conditions, and statistical analysis. \Secref{sec:results} reports the main results and ablations, and \Secref{sec:discussion} discusses mechanisms, limitations, and implications.

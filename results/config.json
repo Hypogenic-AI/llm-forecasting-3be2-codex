@@ -1,0 +1,22 @@
+{
+  "model": "gpt-4.1",
+  "temperature": 0.0,
+  "seed": 42,
+  "sample_per_regime": 30,
+  "prompt_conditions": [
+    "question_only",
+    "question_plus_history"
+  ],
+  "environment": {
+    "python": "3.12.8 (main, Dec 19 2024, 14:33:20) [Clang 18.1.8 ]",
+    "platform": "linux",
+    "timestamp_utc": "2026-05-25T09:56:47.780142",
+    "working_directory": "/workspaces/llm-forecasting-3be2-codex",
+    "gpu_info": "name, memory.total [MiB], memory.free [MiB]\nNVIDIA RTX A6000, 49140 MiB, 48541 MiB\nNVIDIA RTX A6000, 49140 MiB, 48541 MiB\nNVIDIA RTX A6000, 49140 MiB, 48541 MiB\nNVIDIA RTX A6000, 49140 MiB, 48541 MiB",
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.3",
+      "openai": "2.38.0"
+    }
+  }
+}

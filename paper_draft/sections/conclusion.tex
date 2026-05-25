@@ -1,0 +1,9 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We examined whether \gptmodel outperforms contemporaneous human crowd forecasts in two matched regimes derived from the same binary-question dataset: \longterm and \shortterm. The answer is mixed. In the sparse long-horizon regime, the text-only model is directionally better than the crowd, improving mean \brier from 0.200 to 0.151. In the dense short-horizon regime, the text-only model is much worse than the crowd, but adding structured historical trajectory information improves it to near parity and a slight mean advantage. None of the paired differences are statistically significant with $n=30$ per condition, so the evidence is suggestive rather than definitive.
+
+Our main contribution is a controlled within-dataset comparison that separates independent text-based forecasting from history-conditioned synthesis. The key takeaway is that LLM competitiveness depends strongly on information regime: question context alone can be enough for some long-horizon sparse forecasts, while short-horizon performance appears to require structured historical signal.
+
+The next step is to test whether live retrieval at the historical cutoff can close the short-horizon gap without directly exposing crowd probabilities. Larger samples, more platforms, and comparisons to newer OpenAI and non-OpenAI models would also help determine how robust these regime-specific patterns are.
+

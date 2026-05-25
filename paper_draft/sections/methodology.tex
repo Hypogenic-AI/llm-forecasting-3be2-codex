@@ -1,0 +1,18 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\para{Task and dataset.} We study resolved binary forecasting questions from the local `forecast\_questions\_platforms' test split. Each item includes question text, resolution criteria, background context, resolution date, and a trajectory of crowd forecasts over time. Rather than compare across datasets, we convert this single source into matched question-timepoints that differ in horizon and available historical signal.
+
+\para{Regime construction.} We define two operational regimes. The \longterm regime requires a forecast cutoff at least 60 days before resolution with at most five crowd predictions observed before the cutoff. The \shortterm regime requires a cutoff at most 14 days before resolution with at least 30 crowd predictions observed. We sample 30 items per regime, enforce no question overlap between the short-horizon and long-horizon samples, and evaluate two prompt conditions per item. The final sample contains 60 unique question-timepoints and 120 LLM forecasts. The sampled \longterm items are genuinely sparse, with mean 119.2 days to resolution and mean 1.0 crowd predictions observed. The sampled \shortterm items are dense and late-stage, with mean 1.5 days to resolution and mean 100.0 crowd predictions observed.
+
+\para{Prompt conditions.} We use \gptmodel with temperature 0.0 and JSON-only output parsing. In the \questiononly condition, the model sees the question, dates, background, and resolution criteria. In the \withhistory condition, it also sees a structured summary of the crowd trajectory available before the cutoff. This comparison is central to the paper: \questiononly measures how well the model forecasts from question context alone, while \withhistory measures how well it can synthesize structured historical human signals. We use the same local prompt template for both conditions, with the history block added only in the second condition.
+
+\para{Baselines and metrics.} We compare the LLM against two baselines at the same cutoff: the contemporaneous human crowd probability and an uninformed 0.5 forecast. Our primary metric is \brier score, the standard squared-error metric for binary forecasting. We also report thresholded accuracy and qualitative calibration plots. Lower \brier is better. Because the goal is to compare forecasters item by item, we compute paired differences in \brier for each question-timepoint.
+
+\para{Statistical analysis.} For each regime and prompt condition, we run a Wilcoxon signed-rank test on paired LLM-versus-crowd \brier scores and compute a bootstrap 95\% confidence interval for the mean paired difference $(\text{LLM} - \text{Crowd})$. This design tests whether the LLM systematically improves on the crowd rather than only shifting aggregate averages. We treat each sampled question-timepoint as the unit of analysis and use $\alpha=0.05$.
+
+\para{Implementation details.} The experiment runs under Python 3.12.8 with `openai' 2.38.0, `numpy' 2.4.6, and `pandas' 3.0.3. The machine exposes four NVIDIA RTX A6000 GPUs, but they are unused because the evaluation is API-based. Total token usage is 95,148 across both conditions, and the approximate API cost under the stated pricing assumption is \$0.22.
+
+\input{tables/regime_summary}
+\input{tables/paired_tests}
+

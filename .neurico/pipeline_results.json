@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/llm-forecasting-3be2-codex/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/llm-forecasting-3be2-codex/literature_review.md",
+        "resources_catalog": "/workspaces/llm-forecasting-3be2-codex/resources.md",
+        "papers_dir": "/workspaces/llm-forecasting-3be2-codex/papers",
+        "datasets_dir": "/workspaces/llm-forecasting-3be2-codex/datasets",
+        "code_dir": "/workspaces/llm-forecasting-3be2-codex/code"
+      },
+      "log_file": "/workspaces/llm-forecasting-3be2-codex/logs/resource_finder_codex.log",
+      "transcript_file": "/workspaces/llm-forecasting-3be2-codex/logs/resource_finder_codex_transcript.jsonl",
+      "elapsed_time": 560.5936620235443
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 582.9164519309998,
+      "log_file": "/workspaces/llm-forecasting-3be2-codex/logs/execution_codex.log",
+      "transcript_file": "/workspaces/llm-forecasting-3be2-codex/logs/execution_codex_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/llm-forecasting-3be2-codex"
+}

@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\centering
+\caption{Main forecasting results by regime and prompt condition. Lower \brier is better. Best LLM-or-crowd result within each row is shown in \textbf{bold}.}
+\label{tab:main_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llccccccc@{}}
+\toprule
+Regime & Prompt & $n$ & LLM \brier & Crowd \brier & 0.5 Baseline & LLM Acc. & Crowd Acc. & Mean Diff. \\
+\midrule
+\longterm & \questiononly & 30 & {\bf 0.151} & 0.200 & 0.250 & {\bf 0.767} & 0.600 & -0.050 \\
+\longterm & \withhistory & 30 & {\bf 0.174} & 0.200 & 0.250 & {\bf 0.633} & 0.600 & -0.026 \\
+\shortterm & \questiononly & 30 & 0.131 & {\bf 0.065} & 0.250 & 0.833 & {\bf 0.900} & +0.066 \\
+\shortterm & \withhistory & 30 & {\bf 0.056} & 0.065 & 0.250 & {\bf 0.933} & 0.900 & -0.010 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+

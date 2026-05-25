@@ -1,0 +1,21 @@
+regime,prompt_condition,question,resolution,crowd_prob,llm_prob,crowd_brier,llm_brier
+long_term_low_data,question_only,Will the US civilian labor force participation rate be higher in December 2023 than it was in October 2023?,0.0,0.98,0.45,0.9604,0.2025
+long_term_low_data,question_only,"Before 15 January 2024, will a US court rule or state-level electoral authority announce that Donald Trump is ineligible to become president pursuant to Section 3 of the 14th Amendment?",1.0,0.535,0.15,0.2162249999999999,0.7224999999999999
+long_term_low_data,question_only,"Will there be a military conflict between Serbia and Kosovo before January 1, 2024?",0.0,0.7,0.18,0.4899999999999999,0.0324
+long_term_low_data,question_only,"Will the Supreme Court of Israel outright strike down the 2023 amendment to Basic Law: The Judiciary regarding the ""reasonableness"" standard?",1.0,0.98,0.35,0.0004,0.4225
+long_term_low_data,question_only,"Before 10 November 2023, will the US impose new export restrictions that would prohibit the export of Nvidia's current A800 microchips to Chinese entities or China without a license?",0.0,0.73,0.35,0.5328999999999999,0.1224999999999999
+long_term_low_data,question_plus_history,Will the US civilian labor force participation rate be higher in December 2023 than it was in October 2023?,0.0,0.98,0.7,0.9604,0.4899999999999999
+long_term_low_data,question_plus_history,"Will there be a military conflict between Serbia and Kosovo before January 1, 2024?",0.0,0.7,0.3,0.4899999999999999,0.09
+long_term_low_data,question_plus_history,"Before 15 January 2024, will a US court rule or state-level electoral authority announce that Donald Trump is ineligible to become president pursuant to Section 3 of the 14th Amendment?",1.0,0.535,0.3,0.2162249999999999,0.4899999999999999
+long_term_low_data,question_plus_history,Will Azerbaijan invade Armenia before these dates? (2024),0.0,0.52,0.3,0.2704,0.09
+long_term_low_data,question_plus_history,"Will the Supreme Court of Israel outright strike down the 2023 amendment to Basic Law: The Judiciary regarding the ""reasonableness"" standard?",1.0,0.98,0.6,0.0004,0.16
+short_term_high_data,question_only,Will there be an additional Russian IPO on the MICEX in 2023?,1.0,0.755,0.05,0.0600249999999999,0.9025
+short_term_high_data,question_only,Will the US House of Representatives officially open an impeachment inquiry into President Biden before 1 January 2024?,1.0,0.43,0.05,0.3249000000000001,0.9025
+short_term_high_data,question_only,Will Spain win the 2023 FIFA Women's World Cup?,1.0,0.443,0.1,0.3102489999999999,0.81
+short_term_high_data,question_only,"Will the MONUSCO UN peacekeeping mission to the Democratic Republic of the Congo be extended with a military personnel ceiling above 11,000 before January 1, 2024?",1.0,0.509,0.15,0.241081,0.7224999999999999
+short_term_high_data,question_only,"Will Delhi perform cloud seeding before December 1, 2023?",0.0,0.125,0.65,0.015625,0.4225
+short_term_high_data,question_plus_history,"Will PEPFAR be extended before it expires on September 30th, 2023? (Full Extension (Five or More Years))",0.0,0.575,0.15,0.3306249999999999,0.0225
+short_term_high_data,question_plus_history,"Will the MONUSCO UN peacekeeping mission to the Democratic Republic of the Congo be extended with a military personnel ceiling above 11,000 before January 1, 2024?",1.0,0.509,0.5,0.241081,0.25
+short_term_high_data,question_plus_history,Will Spain win the 2023 FIFA Women's World Cup?,1.0,0.443,0.44,0.3102489999999999,0.3136
+short_term_high_data,question_plus_history,Will a nearly continuous human chain stretch across the length of the Forth and Clyde Canal on 14 October 2023?,0.0,0.305,0.31,0.093025,0.0961
+short_term_high_data,question_plus_history,Will Stockholm see more than 500 hours of sun in the summer of 2023?,0.0,0.433,0.43,0.187489,0.1848999999999999

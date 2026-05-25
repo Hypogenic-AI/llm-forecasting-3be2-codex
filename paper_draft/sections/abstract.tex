@@ -1,0 +1,8 @@
+\begin{abstract}
+Forecasting systems are only useful in practice if we know when they can beat existing human judgment. We study that question for binary event forecasting by comparing \gptmodel against contemporaneous human crowd forecasts under two information regimes derived from the same local dataset: a \longterm regime with sparse historical signal and a \shortterm regime with dense historical signal close to resolution. We evaluate 60 resolved questions, sample 30 cutoff timepoints per regime, and elicit model forecasts under two prompt conditions: \questiononly and \withhistory. This design isolates both information regime and access to structured crowd trajectories while keeping the task, dataset, and outcome space fixed.
+
+The results are mixed. In the \longterm regime, \gptmodel outperforms the crowd in the \questiononly condition, improving mean \brier from 0.200 to 0.151 and accuracy from 0.600 to 0.767. In the \shortterm regime, the same model underperforms the crowd without trajectory information, with \brier 0.131 versus 0.065. Adding structured historical crowd data closes that gap and slightly reverses it, yielding \brier 0.056 for the model versus 0.065 for the crowd. None of the paired \brier differences reach $p<0.05$ at $n=30$ per condition, so we treat the effect directions as suggestive rather than definitive.
+
+Our main conclusion is narrower than a blanket claim of LLM superiority. Text-only LLM forecasts appear competitive in long-horizon sparse settings, while short-horizon performance depends strongly on access to structured historical forecasting data.
+\end{abstract}
+
